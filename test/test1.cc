@@ -86,7 +86,7 @@ TEST_CASE("Action taking non const Semantic Values parameter", "[general]")
     )");
 
     parser["ROOT"] = [&](SemanticValues& sv) {
-        auto s = any_cast<std::string>(sv[0]);
+        auto s = std::any_cast<std::string>(sv[0]);
         s[0] = 'H'; // mutate
         return std::string(std::move(s)); // move
     };
@@ -238,19 +238,19 @@ TEST_CASE("enter/leave handlers test", "[general]")
         TOKEN  <- [A-Za-z]+
     )");
 
-    parser["LTOKEN"].enter = [&](const char*, size_t, any& dt) {
-        auto& require_upper_case = *any_cast<bool*>(dt);
+    parser["LTOKEN"].enter = [&](const char*, size_t, std::any& dt) {
+        auto& require_upper_case = *std::any_cast<bool*>(dt);
         require_upper_case = false;
     };
-    parser["LTOKEN"].leave = [&](const char*, size_t, size_t, any&, any& dt) {
-        auto& require_upper_case = *any_cast<bool*>(dt);
+    parser["LTOKEN"].leave = [&](const char*, size_t, size_t, std::any&, std::any& dt) {
+        auto& require_upper_case = *std::any_cast<bool*>(dt);
         require_upper_case = true;
     };
 
     auto message = "should be upper case string...";
 
-    parser["TOKEN"] = [&](const SemanticValues& sv, any& dt) {
-        auto& require_upper_case = *any_cast<bool*>(dt);
+    parser["TOKEN"] = [&](const SemanticValues& sv, std::any& dt) {
+        auto& require_upper_case = *std::any_cast<bool*>(dt);
         if (require_upper_case) {
             const auto& s = sv.str();
             if (!std::all_of(s.begin(), s.end(), ::isupper)) {
@@ -260,7 +260,7 @@ TEST_CASE("enter/leave handlers test", "[general]")
     };
 
     bool require_upper_case = false;
-    any dt = &require_upper_case;
+    std::any dt = &require_upper_case;
     REQUIRE(parser.parse("hello=world", dt) == false);
     REQUIRE(parser.parse("HELLO=world", dt) == false);
     REQUIRE(parser.parse("hello=WORLD", dt) == true);
@@ -518,18 +518,18 @@ TEST_CASE("Simple calculator test", "[general]")
     parser["Additive"] = [](const SemanticValues& sv) {
         switch (sv.choice()) {
         case 0:
-            return any_cast<int>(sv[0]) + any_cast<int>(sv[1]);
+            return std::any_cast<int>(sv[0]) + std::any_cast<int>(sv[1]);
         default:
-            return any_cast<int>(sv[0]);
+            return std::any_cast<int>(sv[0]);
         }
     };
 
     parser["Multitive"] = [](const SemanticValues& sv) {
         switch (sv.choice()) {
         case 0:
-            return any_cast<int>(sv[0]) * any_cast<int>(sv[1]);
+            return std::any_cast<int>(sv[0]) * std::any_cast<int>(sv[1]);
         default:
-            return any_cast<int>(sv[0]);
+            return std::any_cast<int>(sv[0]);
         }
     };
 
@@ -557,10 +557,10 @@ TEST_CASE("Calculator test", "[general]")
 
     // Setup actions
     auto reduce = [](const SemanticValues& sv) -> long {
-        long ret = any_cast<long>(sv[0]);
+        long ret = std::any_cast<long>(sv[0]);
         for (auto i = 1u; i < sv.size(); i += 2) {
-            auto num = any_cast<long>(sv[i + 1]);
-            switch (any_cast<char>(sv[i])) {
+            auto num = std::any_cast<long>(sv[i + 1]);
+            switch (std::any_cast<char>(sv[i])) {
                 case '+': ret += num; break;
                 case '-': ret -= num; break;
                 case '*': ret *= num; break;
@@ -603,10 +603,10 @@ TEST_CASE("Calculator test2", "[general]")
 
     // Setup actions
     auto reduce = [](const SemanticValues& sv) -> long {
-        long ret = any_cast<long>(sv[0]);
+        long ret = std::any_cast<long>(sv[0]);
         for (auto i = 1u; i < sv.size(); i += 2) {
-            auto num = any_cast<long>(sv[i + 1]);
-            switch (any_cast<char>(sv[i])) {
+            auto num = std::any_cast<long>(sv[i + 1]);
+            switch (std::any_cast<char>(sv[i])) {
                 case '+': ret += num; break;
                 case '-': ret -= num; break;
                 case '*': ret *= num; break;
@@ -644,10 +644,10 @@ TEST_CASE("Calculator test3", "[general]")
     )");
 
     auto reduce = [](const SemanticValues& sv) -> long {
-        long ret = any_cast<long>(sv[0]);
+        long ret = std::any_cast<long>(sv[0]);
         for (auto i = 1u; i < sv.size(); i += 2) {
-            auto num = any_cast<long>(sv[i + 1]);
-            switch (any_cast<char>(sv[i])) {
+            auto num = std::any_cast<long>(sv[i + 1]);
+            switch (std::any_cast<char>(sv[i])) {
                 case '+': ret += num; break;
                 case '-': ret -= num; break;
                 case '*': ret *= num; break;
@@ -895,11 +895,11 @@ TEST_CASE("Semantic values test", "[general]")
     )");
 
 	for (const auto& rule: parser.get_rule_names()){
-		parser[rule.c_str()] = [rule](const SemanticValues& sv, any&) {
+		parser[rule.c_str()] = [rule](const SemanticValues& sv, std::any&) {
             if (rule == "term") {
-                REQUIRE(any_cast<std::string>(sv[0]) == "a at 0");
-                REQUIRE(any_cast<std::string>(sv[1]) == "b at 1");
-                REQUIRE(any_cast<std::string>(sv[2]) == "c at 2");
+                REQUIRE(std::any_cast<std::string>(sv[0]) == "a at 0");
+                REQUIRE(std::any_cast<std::string>(sv[1]) == "b at 1");
+                REQUIRE(std::any_cast<std::string>(sv[2]) == "c at 2");
                 return std::string();
             } else {
                 return rule + " at " + std::to_string(sv.c_str() - sv.ss);

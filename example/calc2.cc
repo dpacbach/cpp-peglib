@@ -29,10 +29,10 @@ int main(int argc, const char** argv)
     }
 
     auto reduce = [](const SemanticValues& sv) -> long {
-        auto result = any_cast<long>(sv[0]);
+        auto result = std::any_cast<long>(sv[0]);
         for (auto i = 1u; i < sv.size(); i += 2) {
-            auto num = any_cast<long>(sv[i + 1]);
-            auto ope = any_cast<char>(sv[i]);
+            auto num = std::any_cast<long>(sv[i + 1]);
+            auto ope = std::any_cast<char>(sv[i]);
             switch (ope) {
                 case '+': result += num; break;
                 case '-': result -= num; break;

@@ -131,7 +131,7 @@ int main(int argc, const char **argv) {
     parser.enable_trace(
         [&](const char *name, const char *s, size_t /*n*/,
             const peg::SemanticValues & /*sv*/, const peg::Context &c,
-            const peg::any & /*dt*/) {
+            const std::any & /*dt*/) {
           auto pos = static_cast<size_t>(s - c.s);
           auto backtrack = (pos < prev_pos ? "*" : "");
           string indent;
@@ -145,7 +145,7 @@ int main(int argc, const char **argv) {
         },
         [&](const char *name, const char *s, size_t /*n*/,
             const peg::SemanticValues &sv, const peg::Context &c,
-            const peg::any & /*dt*/, size_t len) {
+            const std::any & /*dt*/, size_t len) {
           auto pos = static_cast<size_t>(s - c.s);
           if (len != static_cast<size_t>(-1)) { pos += len; }
           string indent;

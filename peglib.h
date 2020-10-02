@@ -8,15 +8,8 @@
 #ifndef CPPPEGLIB_PEGLIB_H
 #define CPPPEGLIB_PEGLIB_H
 
-#ifndef PEGLIB_USE_STD_ANY
-#ifdef _MSVC_LANG
-#define PEGLIB_USE_STD_ANY _MSVC_LANG >= 201703L
-#elif defined(__cplusplus)
-#define PEGLIB_USE_STD_ANY __cplusplus >= 201703L
-#endif
-#endif // PEGLIB_USE_STD_ANY
-
 #include <algorithm>
+#include <any>
 #include <cassert>
 #include <cctype>
 #include <cstring>
@@ -33,105 +26,12 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#if PEGLIB_USE_STD_ANY
-#include <any>
-#endif
 
-// guard for older versions of VC++
-#ifdef _MSC_VER
-#if defined(_MSC_VER) && _MSC_VER < 1900 // Less than Visual Studio 2015
-#error "Requires complete C+11 support"
-#endif
+#if !defined(__cplusplus) || __cplusplus < 201703L
+#error "Requires complete C+17 support"
 #endif
 
 namespace peg {
-
-/*-----------------------------------------------------------------------------
- *  any
- *---------------------------------------------------------------------------*/
-
-#if PEGLIB_USE_STD_ANY
-using any = std::any;
-
-// Define a function alias to std::any_cast using perfect forwarding
-template <typename T, typename... Args>
-auto any_cast(Args &&... args)
-    -> decltype(std::any_cast<T>(std::forward<Args>(args)...)) {
-  return std::any_cast<T>(std::forward<Args>(args)...);
-}
-#else
-class any {
-public:
-  any() = default;
-
-  any(const any &rhs) : content_(rhs.clone()) {}
-
-  any(any &&rhs) : content_(rhs.content_) { rhs.content_ = nullptr; }
-
-  template <typename T> any(const T &value) : content_(new holder<T>(value)) {}
-
-  any &operator=(const any &rhs) {
-    if (this != &rhs) {
-      if (content_) { delete content_; }
-      content_ = rhs.clone();
-    }
-    return *this;
-  }
-
-  any &operator=(any &&rhs) {
-    if (this != &rhs) {
-      if (content_) { delete content_; }
-      content_ = rhs.content_;
-      rhs.content_ = nullptr;
-    }
-    return *this;
-  }
-
-  ~any() { delete content_; }
-
-  bool has_value() const { return content_ != nullptr; }
-
-  template <typename T> friend T &any_cast(any &val);
-
-  template <typename T> friend const T &any_cast(const any &val);
-
-private:
-  struct placeholder {
-    virtual ~placeholder() {}
-    virtual placeholder *clone() const = 0;
-  };
-
-  template <typename T> struct holder : placeholder {
-    holder(const T &value) : value_(value) {}
-    placeholder *clone() const override { return new holder(value_); }
-    T value_;
-  };
-
-  placeholder *clone() const { return content_ ? content_->clone() : nullptr; }
-
-  placeholder *content_ = nullptr;
-};
-
-template <typename T> T &any_cast(any &val) {
-  if (!val.content_) { throw std::bad_cast(); }
-  auto p = dynamic_cast<any::holder<T> *>(val.content_);
-  assert(p);
-  if (!p) { throw std::bad_cast(); }
-  return p->value_;
-}
-
-template <> inline any &any_cast<any>(any &val) { return val; }
-
-template <typename T> const T &any_cast(const any &val) {
-  assert(val.content_);
-  auto p = dynamic_cast<any::holder<T> *>(val.content_);
-  assert(p);
-  if (!p) { throw std::bad_cast(); }
-  return p->value_;
-}
-
-template <> inline const any &any_cast<any>(const any &val) { return val; }
-#endif
 
 /*-----------------------------------------------------------------------------
  *  scope_exit
@@ -502,7 +402,7 @@ inline constexpr unsigned int operator"" _(const char *s, size_t) {
 /*
  * Semantic values
  */
-struct SemanticValues : protected std::vector<any> {
+struct SemanticValues : protected std::vector<std::any> {
   // Input text
   const char *path = nullptr;
   const char *ss = nullptr;
@@ -558,33 +458,33 @@ struct SemanticValues : protected std::vector<any> {
     std::vector<T> r;
     end = (std::min)(end, size());
     for (size_t i = beg; i < end; i++) {
-      r.emplace_back(any_cast<T>((*this)[i]));
+      r.emplace_back(std::any_cast<T>((*this)[i]));
     }
     return r;
   }
 
-  using std::vector<any>::iterator;
-  using std::vector<any>::const_iterator;
-  using std::vector<any>::size;
-  using std::vector<any>::empty;
-  using std::vector<any>::assign;
-  using std::vector<any>::begin;
-  using std::vector<any>::end;
-  using std::vector<any>::rbegin;
-  using std::vector<any>::rend;
-  using std::vector<any>::operator[];
-  using std::vector<any>::at;
-  using std::vector<any>::resize;
-  using std::vector<any>::front;
-  using std::vector<any>::back;
-  using std::vector<any>::push_back;
-  using std::vector<any>::pop_back;
-  using std::vector<any>::insert;
-  using std::vector<any>::erase;
-  using std::vector<any>::clear;
-  using std::vector<any>::swap;
-  using std::vector<any>::emplace;
-  using std::vector<any>::emplace_back;
+  using std::vector<std::any>::iterator;
+  using std::vector<std::any>::const_iterator;
+  using std::vector<std::any>::size;
+  using std::vector<std::any>::empty;
+  using std::vector<std::any>::assign;
+  using std::vector<std::any>::begin;
+  using std::vector<std::any>::end;
+  using std::vector<std::any>::rbegin;
+  using std::vector<std::any>::rend;
+  using std::vector<std::any>::operator[];
+  using std::vector<std::any>::at;
+  using std::vector<std::any>::resize;
+  using std::vector<std::any>::front;
+  using std::vector<std::any>::back;
+  using std::vector<std::any>::push_back;
+  using std::vector<std::any>::pop_back;
+  using std::vector<std::any>::insert;
+  using std::vector<std::any>::erase;
+  using std::vector<std::any>::clear;
+  using std::vector<std::any>::swap;
+  using std::vector<std::any>::emplace;
+  using std::vector<std::any>::emplace_back;
 
 private:
   friend class Context;
@@ -607,28 +507,28 @@ template <typename R, typename F,
           typename std::enable_if<std::is_void<R>::value,
                                   std::nullptr_t>::type = nullptr,
           typename... Args>
-any call(F fn, Args &&... args) {
+std::any call(F fn, Args &&... args) {
   fn(std::forward<Args>(args)...);
-  return any();
+  return std::any();
 }
 
 template <typename R, typename F,
           typename std::enable_if<
-              std::is_same<typename std::remove_cv<R>::type, any>::value,
+              std::is_same<typename std::remove_cv<R>::type, std::any>::value,
               std::nullptr_t>::type = nullptr,
           typename... Args>
-any call(F fn, Args &&... args) {
+std::any call(F fn, Args &&... args) {
   return fn(std::forward<Args>(args)...);
 }
 
 template <typename R, typename F,
           typename std::enable_if<
               !std::is_void<R>::value &&
-                  !std::is_same<typename std::remove_cv<R>::type, any>::value,
+                  !std::is_same<typename std::remove_cv<R>::type, std::any>::value,
               std::nullptr_t>::type = nullptr,
           typename... Args>
-any call(F fn, Args &&... args) {
-  return any(fn(std::forward<Args>(args)...));
+std::any call(F fn, Args &&... args) {
+  return std::any(fn(std::forward<Args>(args)...));
 }
 
 class Action {
@@ -674,12 +574,12 @@ public:
 
   operator bool() const { return bool(fn_); }
 
-  any operator()(SemanticValues &sv, any &dt) const { return fn_(sv, dt); }
+  std::any operator()(SemanticValues &sv, std::any &dt) const { return fn_(sv, dt); }
 
 private:
   template <typename R> struct TypeAdaptor_sv {
     TypeAdaptor_sv(std::function<R(SemanticValues &sv)> fn) : fn_(fn) {}
-    any operator()(SemanticValues &sv, any & /*dt*/) {
+    std::any operator()(SemanticValues &sv, std::any & /*dt*/) {
       return call<R>(fn_, sv);
     }
     std::function<R(SemanticValues &sv)> fn_;
@@ -687,27 +587,27 @@ private:
 
   template <typename R> struct TypeAdaptor_csv {
     TypeAdaptor_csv(std::function<R(const SemanticValues &sv)> fn) : fn_(fn) {}
-    any operator()(SemanticValues &sv, any & /*dt*/) {
+    std::any operator()(SemanticValues &sv, std::any & /*dt*/) {
       return call<R>(fn_, sv);
     }
     std::function<R(const SemanticValues &sv)> fn_;
   };
 
   template <typename R> struct TypeAdaptor_sv_dt {
-    TypeAdaptor_sv_dt(std::function<R(SemanticValues &sv, any &dt)> fn)
+    TypeAdaptor_sv_dt(std::function<R(SemanticValues &sv, std::any &dt)> fn)
         : fn_(fn) {}
-    any operator()(SemanticValues &sv, any &dt) { return call<R>(fn_, sv, dt); }
-    std::function<R(SemanticValues &sv, any &dt)> fn_;
+    std::any operator()(SemanticValues &sv, std::any &dt) { return call<R>(fn_, sv, dt); }
+    std::function<R(SemanticValues &sv, std::any &dt)> fn_;
   };
 
   template <typename R> struct TypeAdaptor_csv_dt {
-    TypeAdaptor_csv_dt(std::function<R(const SemanticValues &sv, any &dt)> fn)
+    TypeAdaptor_csv_dt(std::function<R(const SemanticValues &sv, std::any &dt)> fn)
         : fn_(fn) {}
-    any operator()(SemanticValues &sv, any &dt) { return call<R>(fn_, sv, dt); }
-    std::function<R(const SemanticValues &sv, any &dt)> fn_;
+    std::any operator()(SemanticValues &sv, std::any &dt) { return call<R>(fn_, sv, dt); }
+    std::function<R(const SemanticValues &sv, std::any &dt)> fn_;
   };
 
-  typedef std::function<any(SemanticValues &sv, any &dt)> Fty;
+  typedef std::function<std::any(SemanticValues &sv, std::any &dt)> Fty;
 
   template <typename F, typename R>
   Fty make_adaptor(F fn, R (F::*)(SemanticValues &sv) const) {
@@ -740,32 +640,32 @@ private:
   }
 
   template <typename F, typename R>
-  Fty make_adaptor(F fn, R (F::*)(SemanticValues &sv, any &dt) const) {
+  Fty make_adaptor(F fn, R (F::*)(SemanticValues &sv, std::any &dt) const) {
     return TypeAdaptor_sv_dt<R>(fn);
   }
 
   template <typename F, typename R>
-  Fty make_adaptor(F fn, R (F::*)(const SemanticValues &sv, any &dt) const) {
+  Fty make_adaptor(F fn, R (F::*)(const SemanticValues &sv, std::any &dt) const) {
     return TypeAdaptor_csv_dt<R>(fn);
   }
 
   template <typename F, typename R>
-  Fty make_adaptor(F fn, R (F::*)(SemanticValues &sv, any &dt)) {
+  Fty make_adaptor(F fn, R (F::*)(SemanticValues &sv, std::any &dt)) {
     return TypeAdaptor_sv_dt<R>(fn);
   }
 
   template <typename F, typename R>
-  Fty make_adaptor(F fn, R (F::*)(const SemanticValues &sv, any &dt)) {
+  Fty make_adaptor(F fn, R (F::*)(const SemanticValues &sv, std::any &dt)) {
     return TypeAdaptor_csv_dt<R>(fn);
   }
 
   template <typename F, typename R>
-  Fty make_adaptor(F fn, R (*)(SemanticValues &sv, any &dt)) {
+  Fty make_adaptor(F fn, R (*)(SemanticValues &sv, std::any &dt)) {
     return TypeAdaptor_sv_dt<R>(fn);
   }
 
   template <typename F, typename R>
-  Fty make_adaptor(F fn, R (*)(const SemanticValues &sv, any &dt)) {
+  Fty make_adaptor(F fn, R (*)(const SemanticValues &sv, std::any &dt)) {
     return TypeAdaptor_csv_dt<R>(fn);
   }
 
@@ -802,12 +702,12 @@ class Definition;
 
 typedef std::function<void(const char *name, const char *s, size_t n,
                            const SemanticValues &sv, const Context &c,
-                           const any &dt)>
+                           const std::any &dt)>
     TracerEnter;
 
 typedef std::function<void(const char *name, const char *s, size_t n,
                            const SemanticValues &sv, const Context &c,
-                           const any &dt, size_t)>
+                           const std::any &dt, size_t)>
     TracerLeave;
 
 class Context {
@@ -842,7 +742,7 @@ public:
   std::vector<bool> cache_registered;
   std::vector<bool> cache_success;
 
-  std::map<std::pair<size_t, size_t>, std::tuple<size_t, any>> cache_values;
+  std::map<std::pair<size_t, size_t>, std::tuple<size_t, std::any>> cache_values;
 
   TracerEnter tracer_enter;
   TracerLeave tracer_leave;
@@ -875,7 +775,7 @@ public:
   Context operator=(const Context &) = delete;
 
   template <typename T>
-  void packrat(const char *a_s, size_t def_id, size_t &len, any &val, T fn) {
+  void packrat(const char *a_s, size_t def_id, size_t &len, std::any &val, T fn) {
     if (!enablePackratParsing) {
       fn(val);
       return;
@@ -968,9 +868,9 @@ public:
   }
 
   void trace_enter(const char *name, const char *a_s, size_t n,
-                   SemanticValues &sv, any &dt) const;
+                   SemanticValues &sv, std::any &dt) const;
   void trace_leave(const char *name, const char *a_s, size_t n,
-                   SemanticValues &sv, any &dt, size_t len) const;
+                   SemanticValues &sv, std::any &dt, size_t len) const;
   bool is_traceable(const Ope &ope) const;
 
   mutable size_t next_trace_id = 0;
@@ -986,9 +886,9 @@ public:
 
   virtual ~Ope() {}
   size_t parse(const char *s, size_t n, SemanticValues &sv, Context &c,
-               any &dt) const;
+               std::any &dt) const;
   virtual size_t parse_core(const char *s, size_t n, SemanticValues &sv,
-                            Context &c, any &dt) const = 0;
+                            Context &c, std::any &dt) const = 0;
   virtual void accept(Visitor &v) = 0;
 };
 
@@ -1001,7 +901,7 @@ public:
   Sequence(std::vector<std::shared_ptr<Ope>> &&opes) : opes_(opes) {}
 
   size_t parse_core(const char *s, size_t n, SemanticValues &sv, Context &c,
-                    any &dt) const override {
+                    std::any &dt) const override {
     auto &chldsv = c.push();
     auto pop_se = make_scope_exit([&]() { c.pop(); });
     size_t i = 0;
@@ -1046,7 +946,7 @@ public:
   PrioritizedChoice(std::vector<std::shared_ptr<Ope>> &&opes) : opes_(opes) {}
 
   size_t parse_core(const char *s, size_t n, SemanticValues &sv, Context &c,
-                    any &dt) const override {
+                    std::any &dt) const override {
     size_t id = 0;
     for (const auto &ope : opes_) {
       auto &chldsv = c.push();
@@ -1098,7 +998,7 @@ public:
       : ope_(ope), min_(min), max_(max) {}
 
   size_t parse_core(const char *s, size_t n, SemanticValues &sv, Context &c,
-                    any &dt) const override {
+                    std::any &dt) const override {
     size_t count = 0;
     size_t i = 0;
     while (count < min_) {
@@ -1174,7 +1074,7 @@ public:
   AndPredicate(const std::shared_ptr<Ope> &ope) : ope_(ope) {}
 
   size_t parse_core(const char *s, size_t n, SemanticValues & /*sv*/,
-                    Context &c, any &dt) const override {
+                    Context &c, std::any &dt) const override {
     auto &chldsv = c.push();
     c.push_capture_scope();
     auto se = make_scope_exit([&]() {
@@ -1200,7 +1100,7 @@ public:
   NotPredicate(const std::shared_ptr<Ope> &ope) : ope_(ope) {}
 
   size_t parse_core(const char *s, size_t n, SemanticValues & /*sv*/,
-                    Context &c, any &dt) const override {
+                    Context &c, std::any &dt) const override {
     auto save_error_pos = c.error_pos;
     auto &chldsv = c.push();
     c.push_capture_scope();
@@ -1228,7 +1128,7 @@ public:
   Dictionary(const std::vector<std::string> &v) : trie_(v) {}
 
   size_t parse_core(const char *s, size_t n, SemanticValues &sv, Context &c,
-                    any &dt) const override;
+                    std::any &dt) const override;
 
   void accept(Visitor &v) override;
 
@@ -1245,7 +1145,7 @@ public:
       : lit_(s), ignore_case_(ignore_case), is_word_(false) {}
 
   size_t parse_core(const char *s, size_t n, SemanticValues &sv, Context &c,
-                    any &dt) const override;
+                    std::any &dt) const override;
 
   void accept(Visitor &v) override;
 
@@ -1283,7 +1183,7 @@ public:
   }
 
   size_t parse_core(const char *s, size_t n, SemanticValues & /*sv*/,
-                    Context &c, any & /*dt*/) const override {
+                    Context &c, std::any & /*dt*/) const override {
     if (n < 1) {
       c.set_error_pos(s);
       return static_cast<size_t>(-1);
@@ -1322,7 +1222,7 @@ public:
   Character(char ch) : ch_(ch) {}
 
   size_t parse_core(const char *s, size_t n, SemanticValues & /*sv*/,
-                    Context &c, any & /*dt*/) const override {
+                    Context &c, std::any & /*dt*/) const override {
     if (n < 1 || s[0] != ch_) {
       c.set_error_pos(s);
       return static_cast<size_t>(-1);
@@ -1339,7 +1239,7 @@ class AnyCharacter : public Ope,
                      public std::enable_shared_from_this<AnyCharacter> {
 public:
   size_t parse_core(const char *s, size_t n, SemanticValues & /*sv*/,
-                    Context &c, any & /*dt*/) const override {
+                    Context &c, std::any & /*dt*/) const override {
     auto len = codepoint_length(s, n);
     if (len < 1) {
       c.set_error_pos(s);
@@ -1356,7 +1256,7 @@ public:
   CaptureScope(const std::shared_ptr<Ope> &ope) : ope_(ope) {}
 
   size_t parse_core(const char *s, size_t n, SemanticValues &sv, Context &c,
-                    any &dt) const override {
+                    std::any &dt) const override {
     c.push_capture_scope();
     auto se = make_scope_exit([&]() { c.pop_capture_scope(); });
     const auto &rule = *ope_;
@@ -1377,7 +1277,7 @@ public:
       : ope_(ope), match_action_(ma) {}
 
   size_t parse_core(const char *s, size_t n, SemanticValues &sv, Context &c,
-                    any &dt) const override {
+                    std::any &dt) const override {
     const auto &rule = *ope_;
     auto len = rule.parse(s, n, sv, c, dt);
     if (success(len) && match_action_) { match_action_(s, len, c); }
@@ -1395,7 +1295,7 @@ public:
   TokenBoundary(const std::shared_ptr<Ope> &ope) : ope_(ope) {}
 
   size_t parse_core(const char *s, size_t n, SemanticValues &sv, Context &c,
-                    any &dt) const override;
+                    std::any &dt) const override;
 
   void accept(Visitor &v) override;
 
@@ -1407,7 +1307,7 @@ public:
   Ignore(const std::shared_ptr<Ope> &ope) : ope_(ope) {}
 
   size_t parse_core(const char *s, size_t n, SemanticValues & /*sv*/,
-                    Context &c, any &dt) const override {
+                    Context &c, std::any &dt) const override {
     const auto &rule = *ope_;
     auto &chldsv = c.push();
     auto se = make_scope_exit([&]() { c.pop(); });
@@ -1420,19 +1320,19 @@ public:
 };
 
 typedef std::function<size_t(const char *s, size_t n, SemanticValues &sv,
-                             any &dt)>
+                             std::any &dt)>
     Parser;
 
 class User : public Ope {
 public:
   User(Parser fn) : fn_(fn) {}
   size_t parse_core(const char *s, size_t n, SemanticValues &sv,
-                    Context & /*c*/, any &dt) const override {
+                    Context & /*c*/, std::any &dt) const override {
     assert(fn_);
     return fn_(s, n, sv, dt);
   }
   void accept(Visitor &v) override;
-  std::function<size_t(const char *s, size_t n, SemanticValues &sv, any &dt)>
+  std::function<size_t(const char *s, size_t n, SemanticValues &sv, std::any &dt)>
       fn_;
 };
 
@@ -1441,7 +1341,7 @@ public:
   WeakHolder(const std::shared_ptr<Ope> &ope) : weak_(ope) {}
 
   size_t parse_core(const char *s, size_t n, SemanticValues &sv, Context &c,
-                    any &dt) const override {
+                    std::any &dt) const override {
     auto ope = weak_.lock();
     assert(ope);
     const auto &rule = *ope;
@@ -1458,11 +1358,11 @@ public:
   Holder(Definition *outer) : outer_(outer) {}
 
   size_t parse_core(const char *s, size_t n, SemanticValues &sv, Context &c,
-                    any &dt) const override;
+                    std::any &dt) const override;
 
   void accept(Visitor &v) override;
 
-  any reduce(SemanticValues &sv, any &dt) const;
+  std::any reduce(SemanticValues &sv, std::any &dt) const;
 
   const char *trace_name() const;
 
@@ -1483,7 +1383,7 @@ public:
         rule_(nullptr), iarg_(0) {}
 
   size_t parse_core(const char *s, size_t n, SemanticValues &sv, Context &c,
-                    any &dt) const override;
+                    std::any &dt) const override;
 
   void accept(Visitor &v) override;
 
@@ -1505,7 +1405,7 @@ public:
   Whitespace(const std::shared_ptr<Ope> &ope) : ope_(ope) {}
 
   size_t parse_core(const char *s, size_t n, SemanticValues &sv, Context &c,
-                    any &dt) const override {
+                    std::any &dt) const override {
     if (c.in_whitespace) { return 0; }
     c.in_whitespace = true;
     auto se = make_scope_exit([&]() { c.in_whitespace = false; });
@@ -1523,7 +1423,7 @@ public:
   BackReference(const std::string &name) : name_(name) {}
 
   size_t parse_core(const char *s, size_t n, SemanticValues &sv, Context &c,
-                    any &dt) const override;
+                    std::any &dt) const override;
 
   void accept(Visitor &v) override;
 
@@ -1540,7 +1440,7 @@ public:
       : atom_(atom), binop_(binop), info_(info), rule_(rule) {}
 
   size_t parse_core(const char *s, size_t n, SemanticValues &sv, Context &c,
-                    any &dt) const override {
+                    std::any &dt) const override {
     return parse_expression(s, n, sv, c, dt, 0);
   }
 
@@ -1553,7 +1453,7 @@ public:
 
 private:
   size_t parse_expression(const char *s, size_t n, SemanticValues &sv,
-                          Context &c, any &dt, size_t min_prec) const;
+                          Context &c, std::any &dt, size_t min_prec) const;
 
   Definition &get_reference_for_binop(Context &c) const;
 };
@@ -1649,7 +1549,7 @@ inline std::shared_ptr<Ope> ign(const std::shared_ptr<Ope> &ope) {
 }
 
 inline std::shared_ptr<Ope>
-usr(std::function<size_t(const char *s, size_t n, SemanticValues &sv, any &dt)>
+usr(std::function<size_t(const char *s, size_t n, SemanticValues &sv, std::any &dt)>
         fn) {
   return std::make_shared<User>(fn);
 }
@@ -2210,7 +2110,7 @@ public:
 
   Result parse(const char *s, size_t n, const char *path = nullptr) const {
     SemanticValues sv;
-    any dt;
+    std::any dt;
     return parse_core(s, n, sv, dt, path);
   }
 
@@ -2219,13 +2119,13 @@ public:
     return parse(s, n, path);
   }
 
-  Result parse(const char *s, size_t n, any &dt,
+  Result parse(const char *s, size_t n, std::any &dt,
                const char *path = nullptr) const {
     SemanticValues sv;
     return parse_core(s, n, sv, dt, path);
   }
 
-  Result parse(const char *s, any &dt, const char *path = nullptr) const {
+  Result parse(const char *s, std::any &dt, const char *path = nullptr) const {
     auto n = strlen(s);
     return parse(s, n, dt, path);
   }
@@ -2234,10 +2134,10 @@ public:
   Result parse_and_get_value(const char *s, size_t n, T &val,
                              const char *path = nullptr) const {
     SemanticValues sv;
-    any dt;
+    std::any dt;
     auto r = parse_core(s, n, sv, dt, path);
     if (r.ret && !sv.empty() && sv.front().has_value()) {
-      val = any_cast<T>(sv[0]);
+      val = std::any_cast<T>(sv[0]);
     }
     return r;
   }
@@ -2250,18 +2150,18 @@ public:
   }
 
   template <typename T>
-  Result parse_and_get_value(const char *s, size_t n, any &dt, T &val,
+  Result parse_and_get_value(const char *s, size_t n, std::any &dt, T &val,
                              const char *path = nullptr) const {
     SemanticValues sv;
     auto r = parse_core(s, n, sv, dt, path);
     if (r.ret && !sv.empty() && sv.front().has_value()) {
-      val = any_cast<T>(sv[0]);
+      val = std::any_cast<T>(sv[0]);
     }
     return r;
   }
 
   template <typename T>
-  Result parse_and_get_value(const char *s, any &dt, T &val,
+  Result parse_and_get_value(const char *s, std::any &dt, T &val,
                              const char *path = nullptr) const {
     auto n = strlen(s);
     return parse_and_get_value(s, n, dt, val, path);
@@ -2298,9 +2198,9 @@ public:
 
   size_t id = 0;
   Action action;
-  std::function<void(const char *s, size_t n, any &dt)> enter;
-  std::function<void(const char *s, size_t n, size_t matchlen, any &value,
-                     any &dt)>
+  std::function<void(const char *s, size_t n, std::any &dt)> enter;
+  std::function<void(const char *s, size_t n, size_t matchlen, std::any &value,
+                     std::any &dt)>
       leave;
   std::function<std::string()> error_message;
   bool ignoreSemanticValue = false;
@@ -2330,7 +2230,7 @@ private:
     });
   }
 
-  Result parse_core(const char *s, size_t n, SemanticValues &sv, any &dt,
+  Result parse_core(const char *s, size_t n, SemanticValues &sv, std::any &dt,
                     const char *path) const {
     initialize_definition_ids();
 
@@ -2358,7 +2258,7 @@ private:
  */
 
 inline size_t parse_literal(const char *s, size_t n, SemanticValues &sv,
-                            Context &c, any &dt, const std::string &lit,
+                            Context &c, std::any &dt, const std::string &lit,
                             std::once_flag &init_is_word, bool &is_word,
                             bool ignore_case) {
   size_t i = 0;
@@ -2374,7 +2274,7 @@ inline size_t parse_literal(const char *s, size_t n, SemanticValues &sv,
   static Context dummy_c(nullptr, c.s, c.l, 0, nullptr, nullptr, false, nullptr,
                          nullptr);
   static SemanticValues dummy_sv;
-  static any dummy_dt;
+  static std::any dummy_dt;
 
   std::call_once(init_is_word, [&]() {
     if (c.wordOpe) {
@@ -2404,13 +2304,13 @@ inline size_t parse_literal(const char *s, size_t n, SemanticValues &sv,
 }
 
 inline void Context::trace_enter(const char *name, const char *a_s, size_t n,
-                                 SemanticValues &sv, any &dt) const {
+                                 SemanticValues &sv, std::any &dt) const {
   trace_ids.push_back(next_trace_id++);
   tracer_enter(name, a_s, n, sv, *this, dt);
 }
 
 inline void Context::trace_leave(const char *name, const char *a_s, size_t n,
-                                 SemanticValues &sv, any &dt,
+                                 SemanticValues &sv, std::any &dt,
                                  size_t len) const {
   tracer_leave(name, a_s, n, sv, *this, dt, len);
   trace_ids.pop_back();
@@ -2426,7 +2326,7 @@ inline bool Context::is_traceable(const Ope &ope) const {
 }
 
 inline size_t Ope::parse(const char *s, size_t n, SemanticValues &sv,
-                         Context &c, any &dt) const {
+                         Context &c, std::any &dt) const {
   if (c.is_traceable(*this)) {
     TraceOpeName vis;
     const_cast<Ope &>(*this).accept(vis);
@@ -2440,7 +2340,7 @@ inline size_t Ope::parse(const char *s, size_t n, SemanticValues &sv,
 
 inline size_t Dictionary::parse_core(const char *s, size_t n,
                                      SemanticValues & /*sv*/, Context &c,
-                                     any & /*dt*/) const {
+                                     std::any & /*dt*/) const {
   auto len = trie_.match(s, n);
   if (len > 0) { return len; }
   c.set_error_pos(s);
@@ -2449,14 +2349,14 @@ inline size_t Dictionary::parse_core(const char *s, size_t n,
 
 inline size_t LiteralString::parse_core(const char *s, size_t n,
                                         SemanticValues &sv, Context &c,
-                                        any &dt) const {
+                                        std::any &dt) const {
   return parse_literal(s, n, sv, c, dt, lit_, init_is_word_, is_word_,
                        ignore_case_);
 }
 
 inline size_t TokenBoundary::parse_core(const char *s, size_t n,
                                         SemanticValues &sv, Context &c,
-                                        any &dt) const {
+                                        std::any &dt) const {
   c.in_token = true;
   auto se = make_scope_exit([&]() { c.in_token = false; });
   auto len = ope_->parse(s, n, sv, c, dt);
@@ -2473,7 +2373,7 @@ inline size_t TokenBoundary::parse_core(const char *s, size_t n,
 }
 
 inline size_t Holder::parse_core(const char *s, size_t n, SemanticValues &sv,
-                                 Context &c, any &dt) const {
+                                 Context &c, std::any &dt) const {
   if (!ope_) {
     throw std::logic_error("Uninitialized definition ope was used...");
   }
@@ -2487,9 +2387,9 @@ inline size_t Holder::parse_core(const char *s, size_t n, SemanticValues &sv,
   }
 
   size_t len;
-  any val;
+  std::any val;
 
-  c.packrat(s, outer_->id, len, val, [&](any &a_val) {
+  c.packrat(s, outer_->id, len, val, [&](std::any &a_val) {
     if (outer_->enter) { outer_->enter(s, n, dt); }
 
     auto se2 = make_scope_exit([&]() {
@@ -2546,11 +2446,11 @@ inline size_t Holder::parse_core(const char *s, size_t n, SemanticValues &sv,
   return len;
 }
 
-inline any Holder::reduce(SemanticValues &sv, any &dt) const {
+inline std::any Holder::reduce(SemanticValues &sv, std::any &dt) const {
   if (outer_->action && !outer_->disable_action) {
     return outer_->action(sv, dt);
   } else if (sv.empty()) {
-    return any();
+    return std::any();
   } else {
     return std::move(sv.front());
   }
@@ -2562,7 +2462,7 @@ inline const char *Holder::trace_name() const {
 }
 
 inline size_t Reference::parse_core(const char *s, size_t n, SemanticValues &sv,
-                                    Context &c, any &dt) const {
+                                    Context &c, std::any &dt) const {
   if (rule_) {
     // Reference rule
     if (rule_->is_macro) {
@@ -2600,7 +2500,7 @@ inline std::shared_ptr<Ope> Reference::get_core_operator() const {
 
 inline size_t BackReference::parse_core(const char *s, size_t n,
                                         SemanticValues &sv, Context &c,
-                                        any &dt) const {
+                                        std::any &dt) const {
   auto size = static_cast<int>(c.capture_scope_stack_size);
   for (auto i = size - 1; i >= 0; i--) {
     auto index = static_cast<size_t>(i);
@@ -2630,7 +2530,7 @@ PrecedenceClimbing::get_reference_for_binop(Context &c) const {
 
 inline size_t PrecedenceClimbing::parse_expression(const char *s, size_t n,
                                                    SemanticValues &sv,
-                                                   Context &c, any &dt,
+                                                   Context &c, std::any &dt,
                                                    size_t min_prec) const {
   auto len = atom_->parse(s, n, sv, c, dt);
   if (fail(len)) { return len; }
@@ -2639,14 +2539,14 @@ inline size_t PrecedenceClimbing::parse_expression(const char *s, size_t n,
   auto &rule = get_reference_for_binop(c);
   auto action = rule.action;
 
-  rule.action = [&](SemanticValues &sv2, any &dt2) -> any {
+  rule.action = [&](SemanticValues &sv2, std::any &dt2) -> std::any {
     tok = sv2.token();
     if (action) {
       return action(sv2, dt2);
     } else if (!sv2.empty()) {
       return sv2[0];
     }
-    return any();
+    return std::any();
   };
   auto action_se = make_scope_exit([&]() { rule.action = action; });
 
@@ -2654,7 +2554,7 @@ inline size_t PrecedenceClimbing::parse_expression(const char *s, size_t n,
 
   auto i = len;
   while (i < n) {
-    std::vector<any> save_values(sv.begin(), sv.end());
+    std::vector<std::any> save_values(sv.begin(), sv.end());
     auto save_tokens = sv.tokens;
 
     auto chv = c.push();
@@ -2694,7 +2594,7 @@ inline size_t PrecedenceClimbing::parse_expression(const char *s, size_t n,
     sv.emplace_back(std::move(chv[0]));
     i += chl;
 
-    any val;
+    std::any val;
     if (rule_.action) {
       sv.s_ = s;
       sv.n_ = i;
@@ -2900,7 +2800,7 @@ private:
 
   struct Instruction {
     std::string type;
-    any data;
+    std::any data;
   };
 
   struct Data {
@@ -3055,25 +2955,25 @@ private:
   }
 
   void setup_actions() {
-    g["Definition"] = [&](const SemanticValues &sv, any &dt) {
-      Data &data = *any_cast<Data *>(dt);
+    g["Definition"] = [&](const SemanticValues &sv, std::any &dt) {
+      Data &data = *std::any_cast<Data *>(dt);
 
       auto is_macro = sv.choice() == 0;
-      auto ignore = any_cast<bool>(sv[0]);
-      auto name = any_cast<std::string>(sv[1]);
+      auto ignore = std::any_cast<bool>(sv[0]);
+      auto name = std::any_cast<std::string>(sv[1]);
 
       std::vector<std::string> params;
       std::shared_ptr<Ope> ope;
       if (is_macro) {
-        params = any_cast<std::vector<std::string>>(sv[2]);
-        ope = any_cast<std::shared_ptr<Ope>>(sv[4]);
+        params = std::any_cast<std::vector<std::string>>(sv[2]);
+        ope = std::any_cast<std::shared_ptr<Ope>>(sv[4]);
         if (sv.size() == 6) {
-          data.instructions[name] = any_cast<Instruction>(sv[5]);
+          data.instructions[name] = std::any_cast<Instruction>(sv[5]);
         }
       } else {
-        ope = any_cast<std::shared_ptr<Ope>>(sv[3]);
+        ope = std::any_cast<std::shared_ptr<Ope>>(sv[3]);
         if (sv.size() == 5) {
-          data.instructions[name] = any_cast<Instruction>(sv[4]);
+          data.instructions[name] = std::any_cast<Instruction>(sv[4]);
         }
       }
 
@@ -3098,11 +2998,11 @@ private:
 
     g["Expression"] = [&](const SemanticValues &sv) {
       if (sv.size() == 1) {
-        return any_cast<std::shared_ptr<Ope>>(sv[0]);
+        return std::any_cast<std::shared_ptr<Ope>>(sv[0]);
       } else {
         std::vector<std::shared_ptr<Ope>> opes;
         for (auto i = 0u; i < sv.size(); i++) {
-          opes.emplace_back(any_cast<std::shared_ptr<Ope>>(sv[i]));
+          opes.emplace_back(std::any_cast<std::shared_ptr<Ope>>(sv[i]));
         }
         const std::shared_ptr<Ope> ope =
             std::make_shared<PrioritizedChoice>(opes);
@@ -3112,11 +3012,11 @@ private:
 
     g["Sequence"] = [&](const SemanticValues &sv) {
       if (sv.size() == 1) {
-        return any_cast<std::shared_ptr<Ope>>(sv[0]);
+        return std::any_cast<std::shared_ptr<Ope>>(sv[0]);
       } else {
         std::vector<std::shared_ptr<Ope>> opes;
         for (const auto &x : sv) {
-          opes.emplace_back(any_cast<std::shared_ptr<Ope>>(x));
+          opes.emplace_back(std::any_cast<std::shared_ptr<Ope>>(x));
         }
         const std::shared_ptr<Ope> ope = std::make_shared<Sequence>(opes);
         return ope;
@@ -3126,11 +3026,11 @@ private:
     g["Prefix"] = [&](const SemanticValues &sv) {
       std::shared_ptr<Ope> ope;
       if (sv.size() == 1) {
-        ope = any_cast<std::shared_ptr<Ope>>(sv[0]);
+        ope = std::any_cast<std::shared_ptr<Ope>>(sv[0]);
       } else {
         assert(sv.size() == 2);
-        auto tok = any_cast<char>(sv[0]);
-        ope = any_cast<std::shared_ptr<Ope>>(sv[1]);
+        auto tok = std::any_cast<char>(sv[0]);
+        ope = std::any_cast<std::shared_ptr<Ope>>(sv[1]);
         if (tok == '&') {
           ope = apd(ope);
         } else { // '!'
@@ -3147,12 +3047,12 @@ private:
     };
 
     g["Suffix"] = [&](const SemanticValues &sv) {
-      auto ope = any_cast<std::shared_ptr<Ope>>(sv[0]);
+      auto ope = std::any_cast<std::shared_ptr<Ope>>(sv[0]);
       if (sv.size() == 1) {
         return ope;
       } else {
         assert(sv.size() == 2);
-        auto loop = any_cast<Loop>(sv[1]);
+        auto loop = std::any_cast<Loop>(sv[1]);
         switch (loop.type) {
         case Loop::Type::opt: return opt(ope);
         case Loop::Type::zom: return zom(ope);
@@ -3173,27 +3073,27 @@ private:
         return Loop{Loop::Type::oom, std::pair<size_t, size_t>()};
       default: // Regex-like repetition
         return Loop{Loop::Type::rep,
-                    any_cast<std::pair<size_t, size_t>>(sv[0])};
+                    std::any_cast<std::pair<size_t, size_t>>(sv[0])};
       }
     };
 
     g["RepetitionRange"] = [&](const SemanticValues &sv) {
       switch (sv.choice()) {
       case 0: { // Number COMMA Number
-        auto min = any_cast<size_t>(sv[0]);
-        auto max = any_cast<size_t>(sv[1]);
+        auto min = std::any_cast<size_t>(sv[0]);
+        auto max = std::any_cast<size_t>(sv[1]);
         return std::make_pair(min, max);
       }
       case 1: // Number COMMA
-        return std::make_pair(any_cast<size_t>(sv[0]),
+        return std::make_pair(std::any_cast<size_t>(sv[0]),
                               std::numeric_limits<size_t>::max());
       case 2: { // Number
-        auto n = any_cast<size_t>(sv[0]);
+        auto n = std::any_cast<size_t>(sv[0]);
         return std::make_pair(n, n);
       }
       default: // COMMA Number
         return std::make_pair(std::numeric_limits<size_t>::min(),
-                              any_cast<size_t>(sv[0]));
+                              std::any_cast<size_t>(sv[0]));
       }
     };
     g["Number"] = [&](const SemanticValues &sv) {
@@ -3203,19 +3103,19 @@ private:
       return n;
     };
 
-    g["Primary"] = [&](const SemanticValues &sv, any &dt) {
-      Data &data = *any_cast<Data *>(dt);
+    g["Primary"] = [&](const SemanticValues &sv, std::any &dt) {
+      Data &data = *std::any_cast<Data *>(dt);
 
       switch (sv.choice()) {
       case 0:   // Macro Reference
       case 1: { // Reference
         auto is_macro = sv.choice() == 0;
-        auto ignore = any_cast<bool>(sv[0]);
-        const auto &ident = any_cast<std::string>(sv[1]);
+        auto ignore = std::any_cast<bool>(sv[0]);
+        const auto &ident = std::any_cast<std::string>(sv[1]);
 
         std::vector<std::shared_ptr<Ope>> args;
         if (is_macro) {
-          args = any_cast<std::vector<std::shared_ptr<Ope>>>(sv[2]);
+          args = std::any_cast<std::vector<std::shared_ptr<Ope>>>(sv[2]);
         }
 
         std::shared_ptr<Ope> ope =
@@ -3228,24 +3128,24 @@ private:
         }
       }
       case 2: { // (Expression)
-        return any_cast<std::shared_ptr<Ope>>(sv[0]);
+        return std::any_cast<std::shared_ptr<Ope>>(sv[0]);
       }
       case 3: { // TokenBoundary
-        return tok(any_cast<std::shared_ptr<Ope>>(sv[0]));
+        return tok(std::any_cast<std::shared_ptr<Ope>>(sv[0]));
       }
       case 4: { // CaptureScope
-        return csc(any_cast<std::shared_ptr<Ope>>(sv[0]));
+        return csc(std::any_cast<std::shared_ptr<Ope>>(sv[0]));
       }
       case 5: { // Capture
-        const auto &name = any_cast<std::string>(sv[0]);
-        auto ope = any_cast<std::shared_ptr<Ope>>(sv[1]);
+        const auto &name = std::any_cast<std::string>(sv[0]);
+        auto ope = std::any_cast<std::shared_ptr<Ope>>(sv[1]);
         return cap(ope, [name](const char *a_s, size_t a_n, Context &c) {
           auto &cs = c.capture_scope_stack[c.capture_scope_stack_size - 1];
           cs[name] = std::string(a_s, a_n);
         });
       }
       default: {
-        return any_cast<std::shared_ptr<Ope>>(sv[0]);
+        return std::any_cast<std::shared_ptr<Ope>>(sv[0]);
       }
       }
     };
@@ -3283,14 +3183,14 @@ private:
     g["Range"] = [](const SemanticValues &sv) {
       switch (sv.choice()) {
       case 0: {
-        auto s1 = any_cast<std::string>(sv[0]);
-        auto s2 = any_cast<std::string>(sv[1]);
+        auto s1 = std::any_cast<std::string>(sv[0]);
+        auto s2 = std::any_cast<std::string>(sv[1]);
         auto cp1 = decode_codepoint(s1.c_str(), s1.length());
         auto cp2 = decode_codepoint(s2.c_str(), s2.length());
         return std::make_pair(cp1, cp2);
       }
       case 1: {
-        auto s = any_cast<std::string>(sv[0]);
+        auto s = std::any_cast<std::string>(sv[0]);
         auto cp = decode_codepoint(s.c_str(), s.length());
         return std::make_pair(cp, cp);
       }
@@ -3327,7 +3227,7 @@ private:
       PrecedenceClimbing::BinOpeInfo binOpeInfo;
       size_t level = 1;
       for (auto v : sv) {
-        auto tokens = any_cast<std::vector<std::string>>(v);
+        auto tokens = std::any_cast<std::vector<std::string>>(v);
         auto assoc = tokens[0][0];
         for (size_t i = 1; i < tokens.size(); i++) {
           const auto &tok = tokens[i];
@@ -3390,7 +3290,7 @@ private:
                                         const Rules &rules, std::string &start,
                                         Log log) {
     Data data;
-    any dt = &data;
+    std::any dt = &data;
     auto r = g["Grammar"].parse(s, n, dt);
 
     if (!r.ret) {
@@ -3540,7 +3440,7 @@ private:
 
       if (instruction.type == "precedence") {
         const auto &info =
-            any_cast<PrecedenceClimbing::BinOpeInfo>(instruction.data);
+            std::any_cast<PrecedenceClimbing::BinOpeInfo>(instruction.data);
 
         if (!apply_precedence_instruction(rule, info, s, log)) {
           return nullptr;
@@ -3893,7 +3793,7 @@ public:
     return parse_n(s, n, path);
   }
 
-  bool parse_n(const char *s, size_t n, any &dt,
+  bool parse_n(const char *s, size_t n, std::any &dt,
                const char *path = nullptr) const {
     if (grammar_ != nullptr) {
       const auto &rule = (*grammar_)[start_];
@@ -3904,7 +3804,7 @@ public:
     return false;
   }
 
-  bool parse(const char *s, any &dt, const char *path = nullptr) const {
+  bool parse(const char *s, std::any &dt, const char *path = nullptr) const {
     auto n = strlen(s);
     return parse_n(s, n, dt, path);
   }
@@ -3928,7 +3828,7 @@ public:
   }
 
   template <typename T>
-  bool parse_n(const char *s, size_t n, any &dt, T &val,
+  bool parse_n(const char *s, size_t n, std::any &dt, T &val,
                const char *path = nullptr) const {
     if (grammar_ != nullptr) {
       const auto &rule = (*grammar_)[start_];
@@ -3940,7 +3840,7 @@ public:
   }
 
   template <typename T>
-  bool parse(const char *s, any &dt, T &val,
+  bool parse(const char *s, std::any &dt, T &val,
              const char * /*path*/ = nullptr) const {
     auto n = strlen(s);
     return parse_n(s, n, dt, val);
