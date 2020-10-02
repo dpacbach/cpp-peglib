@@ -160,8 +160,9 @@ int main(int argc, const char **argv) {
           }
           std::string token;
           if (!sv.tokens.empty()) {
-            const auto &tok = sv.tokens[0];
-            token += " '" + std::string(tok.first, tok.second) + "'";
+            token += " '";
+            token += sv.tokens[0];
+            token +=+ "'";
           }
           std::cout << "L " << pos << "\t" << indent << ret << name << " #"
                     << c.trace_ids.back() << choice.str() << token << std::endl;

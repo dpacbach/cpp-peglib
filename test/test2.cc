@@ -125,11 +125,11 @@ TEST_CASE("Precedence climbing", "[precedence]") {
   parser.enable_packrat_parsing();
 
   // Setup actions
-  parser["EXPRESSION"] = [](const SemanticValues &sv) -> long {
-    auto result = std::any_cast<long>(sv[0]);
-    if (sv.size() > 1) {
-      auto ope = std::any_cast<char>(sv[1]);
-      auto num = std::any_cast<long>(sv[2]);
+  parser["EXPRESSION"] = [](const SemanticValues &vs) -> long {
+    auto result = std::any_cast<long>(vs[0]);
+    if (vs.size() > 1) {
+      auto ope = std::any_cast<char>(vs[1]);
+      auto num = std::any_cast<long>(vs[2]);
       switch (ope) {
       case '+': result += num; break;
       case '-': result -= num; break;
@@ -139,8 +139,8 @@ TEST_CASE("Precedence climbing", "[precedence]") {
     }
     return result;
   };
-  parser["OPERATOR"] = [](const SemanticValues &sv) { return *sv.c_str(); };
-  parser["NUMBER"] = [](const SemanticValues &sv) { return atol(sv.c_str()); };
+  parser["OPERATOR"] = [](const SemanticValues &vs) { return *vs.sv().data(); };
+  parser["NUMBER"] = [](const SemanticValues &vs) { return vs.token_to_number<long>(); };
 
   bool ret = parser;
   REQUIRE(ret == true);
@@ -185,11 +185,11 @@ TEST_CASE("Precedence climbing with macro", "[precedence]") {
   REQUIRE(ret == true);
 
   // Setup actions
-  parser["INFIX_EXPRESSION"] = [](const SemanticValues &sv) -> long {
-    auto result = std::any_cast<long>(sv[0]);
-    if (sv.size() > 1) {
-      auto ope = std::any_cast<char>(sv[1]);
-      auto num = std::any_cast<long>(sv[2]);
+  parser["INFIX_EXPRESSION"] = [](const SemanticValues &vs) -> long {
+    auto result = std::any_cast<long>(vs[0]);
+    if (vs.size() > 1) {
+      auto ope = std::any_cast<char>(vs[1]);
+      auto num = std::any_cast<long>(vs[2]);
       switch (ope) {
       case '+': result += num; break;
       case '-': result -= num; break;
@@ -199,8 +199,8 @@ TEST_CASE("Precedence climbing with macro", "[precedence]") {
     }
     return result;
   };
-  parser["OPERATOR"] = [](const SemanticValues &sv) { return *sv.c_str(); };
-  parser["NUMBER"] = [](const SemanticValues &sv) { return atol(sv.c_str()); };
+  parser["OPERATOR"] = [](const SemanticValues &vs) { return *vs.sv().data(); };
+  parser["NUMBER"] = [](const SemanticValues &vs) { return vs.token_to_number<long>(); };
 
   {
     auto expr = " 1 + 2 * 3 * (4 - 5 + 6) / 7 - 8 ";
@@ -338,7 +338,7 @@ TEST_CASE("Backreference test", "[backreference]") {
     )");
 
   std::string token;
-  parser["START"] = [&](const SemanticValues &sv) { token = sv.token(); };
+  parser["START"] = [&](const SemanticValues &vs) { token = vs.token(); };
 
   {
     token.clear();
@@ -620,8 +620,8 @@ TEST_CASE("User defined rule test", "[user rule]") {
 TEST_CASE("Semantic predicate test", "[predicate]") {
   parser parser("NUMBER  <-  [0-9]+");
 
-  parser["NUMBER"] = [](const SemanticValues &sv) {
-    auto val = stol(sv.token(), nullptr, 10);
+  parser["NUMBER"] = [](const SemanticValues &vs) {
+    auto val = vs.token_to_number<long>();
     if (val != 100) { throw parse_error("value error!!"); }
     return val;
   };
@@ -777,11 +777,11 @@ TEST_CASE("Macro calculator", "[macro]") {
 	)");
 
   // Setup actions
-  auto reduce = [](const SemanticValues &sv) -> long {
-    auto result = std::any_cast<long>(sv[0]);
-    for (auto i = 1u; i < sv.size(); i += 2) {
-      auto num = std::any_cast<long>(sv[i + 1]);
-      auto ope = std::any_cast<char>(sv[i]);
+  auto reduce = [](const SemanticValues &vs) {
+    auto result = std::any_cast<long>(vs[0]);
+    for (auto i = 1u; i < vs.size(); i += 2) {
+      auto num = std::any_cast<long>(vs[i + 1]);
+      auto ope = std::any_cast<char>(vs[i]);
       switch (ope) {
       case '+': result += num; break;
       case '-': result -= num; break;
@@ -794,13 +794,13 @@ TEST_CASE("Macro calculator", "[macro]") {
 
   parser["EXPRESSION"] = reduce;
   parser["TERM"] = reduce;
-  parser["TERM_OPERATOR"] = [](const SemanticValues &sv) {
-    return static_cast<char>(*sv.c_str());
+  parser["TERM_OPERATOR"] = [](const SemanticValues &vs) {
+    return static_cast<char>(*vs.sv().data());
   };
-  parser["FACTOR_OPERATOR"] = [](const SemanticValues &sv) {
-    return static_cast<char>(*sv.c_str());
+  parser["FACTOR_OPERATOR"] = [](const SemanticValues &vs) {
+    return static_cast<char>(*vs.sv().data());
   };
-  parser["NUMBER"] = [](const SemanticValues &sv) { return atol(sv.c_str()); };
+  parser["NUMBER"] = [](const SemanticValues &vs) { return vs.token_to_number<long>(); };
 
   bool ret = parser;
   REQUIRE(ret == true);
@@ -935,8 +935,8 @@ TEST_CASE("Line information test", "[line information]") {
     )");
 
   std::vector<std::pair<size_t, size_t>> locations;
-  parser["WORD"] = [&](const peg::SemanticValues &sv) {
-    locations.push_back(sv.line_info());
+  parser["WORD"] = [&](const peg::SemanticValues &vs) {
+    locations.push_back(vs.line_info());
   };
 
   bool ret = parser;
