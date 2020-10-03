@@ -6,6 +6,8 @@ cpp-peglib
 
 C++17 header-only [PEG](http://en.wikipedia.org/wiki/Parsing_expression_grammar) (Parsing Expression Grammars) library. You can start using it right away just by including `peglib.h` in your project.
 
+Since this library only supports C++17 compilers, please make sure that compiler the option `-std=c++17` is enabled. (`/std:c++17 /Zc:__cplusplus` for MSVC)
+
 You can also try the online version, PEG Playground at https://yhirose.github.io/cpp-peglib.
 
 The PEG syntax is well described on page 2 in the [document](http://www.brynosaurus.com/pub/lang/peg.pdf). *cpp-peglib* also supports the following additional syntax for now:
