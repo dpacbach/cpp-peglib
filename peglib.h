@@ -379,16 +379,20 @@ inline std::pair<size_t, size_t> line_info(const char *start, const char *cur) {
 /*
  * String tag
  */
-inline constexpr unsigned int str2tag(const char *str, unsigned int h = 0) {
-  return (*str == '\0')
+inline constexpr unsigned int str2tag_core(const char *s, size_t l, unsigned int h) {
+  return (l == 0)
              ? h
-             : str2tag(str + 1, (h * 33) ^ static_cast<unsigned char>(*str));
+             : str2tag_core(s + 1, l - 1, (h * 33) ^ static_cast<unsigned char>(*s));
+}
+
+inline constexpr unsigned int str2tag(std::string_view sv) {
+  return str2tag_core(sv.data(), sv.size(), 0);
 }
 
 namespace udl {
 
-inline constexpr unsigned int operator"" _(const char *s, size_t) {
-  return str2tag(s);
+inline constexpr unsigned int operator"" _(const char *s, size_t l) {
+  return str2tag_core(s, l, 0);
 }
 
 } // namespace udl
@@ -2288,7 +2292,7 @@ inline size_t Holder::parse_core(const char *s, size_t n, SemanticValues &vs,
   if (success(len)) {
     if (!outer_->ignoreSemanticValue) {
       vs.emplace_back(std::move(val));
-      vs.tags.emplace_back(str2tag(outer_->name.data()));
+      vs.tags.emplace_back(str2tag(outer_->name));
     }
   } else {
     if (outer_->error_message) {
