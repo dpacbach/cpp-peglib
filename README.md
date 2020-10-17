@@ -1,6 +1,7 @@
 cpp-peglib
 ==========
 
+[![](https://github.com/yhirose/cpp-peglib/workflows/CMake/badge.svg)](https://github.com/yhirose/cpp-peglib/actions)
 [![Build Status](https://travis-ci.org/yhirose/cpp-peglib.svg?branch=master)](https://travis-ci.org/yhirose/cpp-peglib)
 [![Bulid Status](https://ci.appveyor.com/api/projects/status/github/yhirose/cpp-peglib?branch=master&svg=true)](https://ci.appveyor.com/project/yhirose/cpp-peglib)
 
